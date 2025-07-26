@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+
+# Database
+server/instance/
+*.db
+
+# Uploads
+server/uploads/
+
+# Config (real one)
+# client/config.yaml
+# server/config.yaml
+
+# Env
+.env

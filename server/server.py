@@ -1,14 +1,25 @@
+import os
+import yaml
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-import os
 
-UPLOAD_FOLDER = 'uploads'
+# ---- Load config ----
+with open("config.yaml") as f:
+    cfg = yaml.safe_load(f)
 
+server_cfg = cfg.get("server", {})
+
+UPLOAD_FOLDER = server_cfg.get("upload_folder", "uploads")
+DB_URI = server_cfg.get("database", "sqlite:///clipboard.db")
+MAX_SIZE = server_cfg.get("max_upload_size_mb", 1) * 1024 * 1024 * 1024  # GB → bytes
+
+# ---- Setup Flask ----
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clipboard.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = DB_URI
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024 * 1024  # 1GB limit
+app.config['MAX_CONTENT_LENGTH'] = MAX_SIZE
 db = SQLAlchemy(app)
 
 if not os.path.exists(UPLOAD_FOLDER):
