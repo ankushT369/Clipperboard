@@ -7,7 +7,7 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncod
 import subprocess
 
 # ============ CONFIGURATION =============
-SERVER_URL = "http://192.168.0.194:8000"  # <-- Replace this
+SERVER_URL = "http:<UR SERVER>:8000"  # <-- Replace this
 DEVICE_NAME = f"{platform.system().lower()}-{platform.node()}"
 CHECK_INTERVAL = 2  # seconds
 DOWNLOAD_DIR = os.path.expanduser("~/ClipboardDownloads")
