@@ -205,7 +205,7 @@ while True:
                     last_received = content
                     print(f"[0]-[0] Clipboard updated: {content[:40]}...")
 
-                # ✅ Mark as handled so we don't repeat
+                # Mark as handled so we don't repeat
                 last_handled_id = clipboard_id
 
     except Exception as e:
