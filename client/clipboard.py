@@ -1,16 +1,23 @@
 import os
+import yaml
 import time
 import platform
 import requests
-from tqdm import tqdm
-from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 import subprocess
 
+from tqdm import tqdm
+from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
+
 # ============ CONFIGURATION =============
-SERVER_URL = "http:<UR SERVER>:8000"  # <-- Replace this
-DEVICE_NAME = f"{platform.system().lower()}-{platform.node()}"
-CHECK_INTERVAL = 2  # seconds
-DOWNLOAD_DIR = os.path.expanduser("~/ClipboardDownloads")
+with open("config.yaml") as f:
+    cfg = yaml.safe_load(f)
+
+client_cfg = cfg.get("client", {})
+
+SERVER_URL = client_cfg.get("server_url", "http://127.0.0.1:8000")
+DEVICE_NAME = client_cfg.get("device_name") or f"{platform.system().lower()}-{platform.node()}"
+CHECK_INTERVAL = client_cfg.get("check_interval", 2)
+DOWNLOAD_DIR = os.path.expanduser(client_cfg.get("download_dir", "~/ClipboardDownloads"))
 
 # Create download dir if missing
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -40,7 +47,10 @@ def get_clipboard():
             return subprocess.check_output("pbpaste", text=True).strip()
 
         elif system == "Linux":
-            return subprocess.check_output(["xclip", "-selection", "clipboard", "-o"], text=True).strip()
+            if "com.termux" in os.environ.get("PREFIX", ""):
+                return subprocess.check_output(["termux-clipboard-get"], text=True).strip()
+            else:
+                return subprocess.check_output(["xclip", "-selection", "clipboard", "-o"], text=True).strip()
 
     except Exception as e:
         print("Clipboard read error:", e)
@@ -58,7 +68,11 @@ def set_clipboard(text):
         elif system == "Darwin":
             subprocess.run("pbcopy", input=text, text=True)
         elif system == "Linux":
-            subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True)
+            if "com.termux" in os.environ.get("PREFIX", ""):
+                subprocess.run(["termux-clipboard-set"], input=text, text=True)
+            else:
+                subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True)
+
     except Exception as e:
         print("Clipboard write error:", e)
 

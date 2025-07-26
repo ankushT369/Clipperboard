@@ -1,0 +1,7 @@
+server:
+  host: "0.0.0.0"
+  port: 8000
+  upload_folder: "uploads"
+  database: "sqlite:///clipboard.db"
+  max_upload_size_mb: 1024
+
