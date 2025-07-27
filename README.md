@@ -4,7 +4,6 @@ A Python-based clipboard synchronization tool that works across multiple devices
 
 This tool allows you to sync your clipboard content across devices using a Flask server and a Python-based clipboard client.
 
----
 
 ## Features
 
@@ -12,7 +11,6 @@ This tool allows you to sync your clipboard content across devices using a Flask
 - Auto clipboard detection (text and file path)
 - Works on Windows, macOS, Linux, Android
 
----
 
 ## How It Works
 
@@ -30,7 +28,6 @@ This tool allows you to sync your clipboard content across devices using a Flask
    - Detects clipboard changes
    - Updates clipboard accordingly
 
----
 
 ## Installation
 
@@ -52,7 +49,6 @@ sudo apt install xclip
 ### macOS
 No extra dependencies required.
 
----
 
 ## Configuration
  edit needed
@@ -77,7 +73,6 @@ No extra dependencies required.
 4 directories, 7 files
 ```
 
----
 
 ## To Do
 
@@ -87,13 +82,11 @@ No extra dependencies required.
 - Sync history or logs
 - LAN-only secure access or token authentication
 
----
 
 ## Contributing
 
 Pull requests are welcome. If you have suggestions for features or improvements, please open an issue.
 
----
 
 ## Credits
 
