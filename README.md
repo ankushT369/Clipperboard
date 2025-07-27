@@ -1,6 +1,6 @@
 # Universal Clipboard Sync (Mac, Windows, Linux, Android)
 
-A Python-based clipboard synchronization tool that works across multiple devices and operating systems. It supports text, file path, and file content sharing (with upload/download progress bars) over a shared network.
+A Python-based clipboard synchronization tool that works across multiple devices and operating systems. 
 
 This tool allows you to sync your clipboard content across devices using a Flask server and a Python-based clipboard client.
 
@@ -9,11 +9,8 @@ This tool allows you to sync your clipboard content across devices using a Flask
 ## Features
 
 - Share text clipboard across devices
-- Upload and share files between devices
-- Prompt user before downloading files
-- Upload/Download progress bars with speed display
 - Auto clipboard detection (text and file path)
-- Works on Windows, macOS, Linux
+- Works on Windows, macOS, Linux, Android
 
 ---
 
@@ -31,8 +28,6 @@ This tool allows you to sync your clipboard content across devices using a Flask
 
 3. Automatically:
    - Detects clipboard changes
-   - Uploads file or text if changed
-   - Prompts other devices to download
    - Updates clipboard accordingly
 
 ---
@@ -59,49 +54,27 @@ No extra dependencies required.
 
 ---
 
-## File Uploads/Downloads
-
-- Uploads show a real-time progress bar and speed (MB/s)
-- Downloads prompt before saving
-- Files are saved to `~/ClipboardDownloads` (changeable)
-
----
-
-## Example Output
-
-```
-Clipboard helper started on macbook.local
-Uploading test.pdf: 100%|██████████| 3.2M/3.2M [00:01<00:00, 3.17MB/s]
-Uploaded test.pdf
-File received from another device: test.pdf
-Download this file? (y/n): y
-Downloading test.pdf: 100%|██████████| 3.2M/3.2M [00:01<00:00, 3.18MB/s]
-Downloaded: ~/ClipboardDownloads/test.pdf
-```
-
----
-
 ## Configuration
-
-Open `clipboard_helper.py` and set:
-
-```python
-SERVER_URL = "http://<your-server-ip>:5000"  # Use your actual server IP
-DEVICE_NAME = platform.node()                # Auto-detected device name
-```
-
-Make sure all devices point to the correct IP.
-
----
+ edit needed
 
 ## Folder Structure
 
 ```
-project/
-├── clipboard_server.py      # Flask-based server
-├── clipboard_helper.py      # Python client for clipboard sync
-├── uploads/                 # Server folder for shared files
-└── README.md
+[ankush@cognitive Clipperboard]$ tree
+.
+├── client
+│   ├── clipboard.py
+│   └── config.yaml
+├── README.md
+└── server
+    ├── config.yaml
+    ├── instance
+    │   └── clipboard.db
+    ├── server.py
+    ├── server_setup.sh
+    └── uploads
+
+4 directories, 7 files
 ```
 
 ---

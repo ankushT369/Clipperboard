@@ -4,5 +4,5 @@ server:
   max_upload_size_mb: 1024
   ngrok_authtoken: 2bZB2ANZNkGGudCbOhsRL1q83rj_5fcwcuaTALbmBfZJXE5q9
   port: 8000
-  public_url: https://ab953bfb5779.ngrok-free.app
+  public_url: https://daac1e4eea55.ngrok-free.app
   upload_folder: uploads
