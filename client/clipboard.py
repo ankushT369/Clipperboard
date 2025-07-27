@@ -5,9 +5,6 @@ import platform
 import requests
 import subprocess
 
-from tqdm import tqdm
-from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
-
 # ============ CONFIGURATION =============
 with open("config.yaml") as f:
     cfg = yaml.safe_load(f)
@@ -17,17 +14,15 @@ client_cfg = cfg.get("client", {})
 SERVER_URL = client_cfg.get("server_url", "http://127.0.0.1:8000")
 DEVICE_NAME = client_cfg.get("device_name") or f"{platform.system().lower()}-{platform.node()}"
 CHECK_INTERVAL = client_cfg.get("check_interval", 2)
-DOWNLOAD_DIR = os.path.expanduser(client_cfg.get("download_dir", "~/ClipboardDownloads"))
 
-# Create download dir if missing
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-
-# Track last events
+# Track last clipboard states
 last_clipboard = ""
 last_received = ""
+last_handled_id = None
 
-# OS-based clipboard
+# ============ CLIPBOARD FUNCTIONS ============
 def get_clipboard():
+    """Read current clipboard content (text only)."""
     system = platform.system()
     try:
         if system == "Windows":
@@ -38,8 +33,6 @@ def get_clipboard():
                 if win32clipboard.IsClipboardFormatAvailable(win32con.CF_TEXT):
                     data = win32clipboard.GetClipboardData()
                     return data.strip()
-                elif win32clipboard.IsClipboardFormatAvailable(win32con.CF_HDROP):
-                    return win32clipboard.GetClipboardData(win32con.CF_HDROP)[0]
             finally:
                 win32clipboard.CloseClipboard()
 
@@ -57,6 +50,7 @@ def get_clipboard():
     return ""
 
 def set_clipboard(text):
+    """Write text to clipboard."""
     system = platform.system()
     try:
         if system == "Windows":
@@ -72,157 +66,57 @@ def set_clipboard(text):
                 subprocess.run(["termux-clipboard-set"], input=text, text=True)
             else:
                 subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True)
-
     except Exception as e:
         print("Clipboard write error:", e)
 
-# ================= FILE UPLOAD ==================
-from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
-from tqdm import tqdm
-import time
-
-def upload_file(filepath):
-    try:
-        filename = os.path.basename(filepath)
-        filesize = os.path.getsize(filepath)
-        url = f"{SERVER_URL}/upload"
-
-        with open(filepath, 'rb') as f:
-            encoder = MultipartEncoder(fields={'file': (filename, f, 'application/octet-stream')})
-            progress_bar = tqdm(
-                total=encoder.len,
-                unit='B',
-                unit_scale=True,
-                unit_divisor=1024,
-                desc=f"->> Uploading {filename}",
-                dynamic_ncols=True
-            )
-
-            last_time = time.time()
-            last_bytes = 0
-
-            def callback(monitor):
-                nonlocal last_time, last_bytes
-                now = time.time()
-                elapsed = now - last_time
-                bytes_sent = monitor.bytes_read - last_bytes
-                if elapsed > 0:
-                    speed = bytes_sent / elapsed  # bytes/sec
-                    progress_bar.set_postfix_str(f"{speed / 1024 / 1024:.2f} MB/s")
-                last_time = now
-                last_bytes = monitor.bytes_read
-                progress_bar.update(monitor.bytes_read - progress_bar.n)
-
-            monitor = MultipartEncoderMonitor(encoder, callback)
-            headers = {'Content-Type': monitor.content_type}
-            response = requests.post(url, data=monitor, headers=headers)
-
-            progress_bar.close()
-
-            if response.ok:
-                print(f"(+) Uploaded {filename}")
-                return filename
-            else:
-                print("(-) Upload failed:", response.text)
-
-    except Exception as e:
-        print("(-) Upload error:", e)
-
-    return None
-
-
-# ============== FILE DOWNLOAD ===================
-def download_file(filename):
-    url = f"{SERVER_URL}/download/{filename}"
-    dest_path = os.path.join(DOWNLOAD_DIR, filename)
-
-    print(f"\n(+_+) File received: {filename}")
-    choice = input("|?| Download this file? (y/n): ").strip().lower()
-    if choice != 'y':
-        print("(-_-) Skipped.")
-        return None
-
-    try:
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            total = int(r.headers.get('content-length', 0))
-            with open(dest_path, 'wb') as f, tqdm(
-                total=total, unit='B', unit_scale=True, desc=f"📥 Downloading {filename}"
-            ) as bar:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                        bar.update(len(chunk))
-        print(f"(+_+)(+_+) Saved to: {dest_path}")
-        return dest_path
-    except Exception as e:
-        print("(-_-)(-_-) Download error:", e)
-        return None
-
-# ============== SERVER INTERACTION ================
-def send_clipboard(content_type, content):
+# ============ SERVER INTERACTION ============
+def send_clipboard(content):
     try:
         res = requests.post(f"{SERVER_URL}/send", json={
-            "type": content_type,
+            "type": "text",
             "content": content,
             "device": DEVICE_NAME
         })
         if res.ok:
-            print(f"<-> Sent clipboard to server ({content_type})")
+            print(f"<-> Sent clipboard to server.")
     except Exception as e:
         print(">-< Failed to send to server:", e)
 
 def fetch_clipboard():
     try:
-        res = requests.get(f"{SERVER_URL}/get").json()
-        return res
+        return requests.get(f"{SERVER_URL}/get").json()
     except:
         return None
 
-# ============== MAIN LOOP =====================
-print(f".......... Clipboard helper started on {DEVICE_NAME}")
-last_handled_id = None
+# ============ MAIN LOOP ============
+print(f"Clipboard sync started on {DEVICE_NAME}")
 
 while True:
     try:
         current = get_clipboard()
 
-        # Check if it's a file and not previously sent/received
+        # If clipboard changed locally → send to server
         if current and current != last_clipboard and current != last_received:
-            if os.path.isfile(current):
-                uploaded = upload_file(current)
-                if uploaded:
-                    send_clipboard("file", uploaded)
-                    last_clipboard = current
-            else:
-                send_clipboard("text", current)
-                last_clipboard = current
+            send_clipboard(current)
+            last_clipboard = current
 
-        # Get from server
+        # Fetch new clipboard from server
         data = fetch_clipboard()
         if data:
             c_type = data.get("type")
             content = data.get("content")
             sender = data.get("device")
-
-            # Unique ID per clipboard entry
             clipboard_id = f"{c_type}:{content}"
 
             if sender != DEVICE_NAME and clipboard_id != last_handled_id:
-                if c_type == "file":
-                    path = download_file(content)
-                    if path:
-                        set_clipboard(path)
-                        last_received = path
-                elif c_type == "text":
+                if c_type == "text":
                     set_clipboard(content)
                     last_received = content
                     print(f"[0]-[0] Clipboard updated: {content[:40]}...")
-
-                # Mark as handled so we don't repeat
                 last_handled_id = clipboard_id
 
     except Exception as e:
         print("[x]-[x] Error:", e)
 
     time.sleep(CHECK_INTERVAL)
+

@@ -1,5 +1,4 @@
 client:
-  server_url: "http://127.0.0.1:8000"
-  device_name: ""
-  check_interval: 2 
-  download_dir: "~/ClipboardDownloads"
+  check_interval: 2
+  device_name: ''
+  server_url: https://ab953bfb5779.ngrok-free.app
